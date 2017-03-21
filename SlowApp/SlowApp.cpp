@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 
+// 사용자가 중단 버튼을 누르면 스레드를 종료 유도하기 위함
 volatile bool g_stopNow = false;
 
 void SlowWork1();
@@ -11,12 +12,21 @@ void SlowWork3();
 void SlowSubwork1();
 void SlowSubwork2();
 void SlowSubwork3();
+void WasteMemory(map<int, int>& map);
+
+//////////////////////////////////////////////////////////////////////////
+// 메모리 낭비의 희생양 
+
+mutex g_mutex;
 
 map<int, int> map1;
 map<int, int> map2;
 map<int, int> map3;
 
 int g_num = 0;
+
+//////////////////////////////////////////////////////////////////////////
+// 느린 함수들
 
 void thread1()
 {
@@ -61,19 +71,13 @@ void SlowWork3()
 	SlowSubwork3();
 }
 
-void WasteMemory(map<int,int>& map)
-{
-	map[g_num] = g_num;
-	g_num++;
-}
-
 void SlowSubwork1()
 {
 	for (int i = 0; i < 1000; i++)
 	{
 		rand();
 		WasteMemory(map1);
-	}	
+	}
 }
 
 void SlowSubwork2()
@@ -94,8 +98,19 @@ void SlowSubwork3()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// 메모리 낭비용
+void WasteMemory(map<int,int>& map)
+{
+	lock_guard<mutex> lock(g_mutex);
+	map[g_num] = g_num;
+	g_num++;
+}
 
-int main()
+
+//////////////////////////////////////////////////////////////////////////
+
+int main() 
 {
 	thread t1([]() { thread1(); });
 	thread t2([]() { thread2(); });
